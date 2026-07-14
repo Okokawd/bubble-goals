@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <title>Bubble Goals</title>
+
+  <!-- PWA / Homescreen -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#c7d2fe" />
+
+  <!-- Add to Home Screen (iPhone) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bubble Goals" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Kopfbereich -->
+    <header class="topbar">
+      <h1 class="app-title">Bubble&nbsp;Goals</h1>
+      <div class="tabs" role="tablist">
+        <button class="tab is-active" data-view="heute" role="tab">Heute</button>
+        <button class="tab" data-view="gestern" role="tab">Gestern</button>
+      </div>
+    </header>
+
+    <!-- Blasen-Bühne (Heute) -->
+    <main id="stage" class="stage" aria-label="Deine schwebenden Ziele"></main>
+
+    <!-- Leer-Hinweis für Heute -->
+    <div id="empty-heute" class="empty-hint hidden">
+      <p>Noch keine Ziele für heute.</p>
+      <p class="empty-sub">Tippe auf&nbsp;<span class="plus-inline">+</span>&nbsp;um dein erstes Ziel zu erstellen.</p>
+    </div>
+
+    <!-- Gestern-Ansicht -->
+    <section id="gestern-view" class="gestern-view hidden" aria-label="Ziele von gestern">
+      <div id="stats" class="stats-card"></div>
+      <ul id="gestern-list" class="gestern-list"></ul>
+    </section>
+
+    <!-- Plus-Knopf -->
+    <button id="add-btn" class="add-btn" aria-label="Neues Ziel erstellen">+</button>
+
+    <!-- Formular (gleitet von unten herein) -->
+    <div id="sheet-overlay" class="sheet-overlay hidden">
+      <form id="goal-form" class="sheet" autocomplete="off">
+        <div class="sheet-handle"></div>
+        <h2 class="sheet-title">Neues Ziel</h2>
+
+        <label class="field">
+          <span class="field-label">Aufgabe</span>
+          <input id="titel" type="text" maxlength="60" placeholder="z. B. 20 Min. spazieren" required />
+        </label>
+
+        <div class="field">
+          <span class="field-label">Wichtigkeit</span>
+          <div class="priority-picker" id="priority-picker">
+            <button type="button" class="prio prio-niedrig" data-prio="niedrig">Niedrig</button>
+            <button type="button" class="prio prio-mittel is-active" data-prio="mittel">Mittel</button>
+            <button type="button" class="prio prio-hoch" data-prio="hoch">Hoch</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="field-label">Zeitlimit</span>
+          <div class="wheel-readout" id="wheel-readout">15 Min</div>
+          <div class="wheel-picker" id="wheel-picker">
+            <div class="wheel-band"></div>
+            <div class="wheel-col">
+              <div class="wheel" id="wheel-h"></div>
+              <span class="wheel-unit">Std</span>
+            </div>
+            <div class="wheel-col">
+              <div class="wheel" id="wheel-m"></div>
+              <span class="wheel-unit">Min</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" id="cancel-btn" class="btn btn-ghost">Abbrechen</button>
+          <button type="submit" class="btn btn-primary">Ziel erstellen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/store.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Service Worker registrieren (Offline-Fähigkeit)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
