@@ -4,12 +4,16 @@
 const Store = (() => {
   const KEY = 'bubble-goals-v1';
 
-  // Datum als "YYYY-MM-DD" (lokale Zeit)
-  function today() {
-    const d = new Date();
+  // Datum eines Zeitpunkts als "YYYY-MM-DD" (lokale Zeit)
+  function dayOf(ts) {
+    const d = new Date(ts);
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${d.getFullYear()}-${m}-${day}`;
+  }
+
+  function today() {
+    return dayOf(Date.now());
   }
 
   function yesterday() {
@@ -44,6 +48,11 @@ const Store = (() => {
     if (kept.length !== goals.length) changed = true;
 
     kept.forEach((g) => {
+      // geplante Ziele: Startzeit erreicht -> aktiv; ganze Zeit verpasst -> geplatzt
+      if (g.status === 'geplant') {
+        if (now >= g.ablaufZeit) { g.status = 'geplatzt'; changed = true; }
+        else if (now >= g.startZeit) { g.status = 'aktiv'; changed = true; }
+      }
       if (g.status === 'aktiv' && now >= g.ablaufZeit) {
         g.status = 'geplatzt';
         changed = true;
@@ -54,18 +63,20 @@ const Store = (() => {
     return kept;
   }
 
-  function add({ titel, prioritaet, dauerMinuten }) {
+  function add({ titel, prioritaet, dauerMinuten, startZeit }) {
     const goals = loadAll();
-    const start = Date.now();
+    const now = Date.now();
+    const start = startZeit || now;
     const goal = {
-      id: start + '-' + Math.random().toString(36).slice(2, 7),
+      id: now + '-' + Math.random().toString(36).slice(2, 7),
       titel: titel.trim(),
       prioritaet,
       dauerMinuten,
       startZeit: start,
       ablaufZeit: start + dauerMinuten * 60 * 1000,
-      status: 'aktiv',
-      tag: today(),
+      // liegt der Start in der Zukunft -> "geplant", sonst sofort "aktiv"
+      status: start > now + 1000 ? 'geplant' : 'aktiv',
+      tag: dayOf(start),
     };
     goals.push(goal);
     saveAll(goals);

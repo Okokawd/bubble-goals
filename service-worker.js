@@ -1,5 +1,5 @@
 /* Service Worker – macht Bubble Goals offline nutzbar */
-const CACHE = 'bubble-goals-v2';
+const CACHE = 'bubble-goals-v3';
 const ASSETS = [
   '.',
   'index.html',

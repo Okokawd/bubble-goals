@@ -69,6 +69,25 @@
         </div>
 
         <div class="field">
+          <span class="field-label">Start</span>
+          <div class="priority-picker" id="start-toggle">
+            <button type="button" class="prio is-active" data-start="sofort">Sofort</button>
+            <button type="button" class="prio" data-start="uhrzeit">Ab Uhrzeit</button>
+          </div>
+          <div class="wheel-picker start-wheel hidden" id="start-wheel-picker">
+            <div class="wheel-band"></div>
+            <div class="wheel-col">
+              <div class="wheel" id="wheel-sh"></div>
+              <span class="wheel-unit">Uhr</span>
+            </div>
+            <div class="wheel-col">
+              <div class="wheel" id="wheel-sm"></div>
+              <span class="wheel-unit">Min</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
           <span class="field-label">Zeitlimit</span>
           <div class="wheel-readout" id="wheel-readout">15 Min</div>
           <div class="wheel-picker" id="wheel-picker">

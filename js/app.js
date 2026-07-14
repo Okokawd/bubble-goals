@@ -20,11 +20,16 @@
   const wheelH = document.getElementById('wheel-h');
   const wheelM = document.getElementById('wheel-m');
   const wheelReadout = document.getElementById('wheel-readout');
+  const startToggle = document.getElementById('start-toggle');
+  const startWheelPicker = document.getElementById('start-wheel-picker');
+  const wheelSH = document.getElementById('wheel-sh');
+  const wheelSM = document.getElementById('wheel-sm');
 
   // ---- Zustand ----
   const bubbles = new Map();      // id -> Blasen-Objekt (aktive Blasen)
   let currentView = 'heute';
   let selectedPrio = 'mittel';
+  let startMode = 'sofort';       // 'sofort' | 'uhrzeit'
 
   // Durchmesser der Blase nach Priorität (px)
   const SIZE = { niedrig: 104, mittel: 132, hoch: 164 };
@@ -100,7 +105,9 @@
       timerEl: el.querySelector('.b-timer'),
       lastLabel: '',
       warned: false,
+      pending: goal.startZeit > Date.now() + 1000,
     };
+    if (b.pending) el.classList.add('pending');
 
     el.addEventListener('click', () => complete(b));
 
@@ -185,8 +192,28 @@
     return `${m}:${String(s).padStart(2, '0')}`;
   }
 
+  function clockLabel(ts) {
+    const d = new Date(ts);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
   function updateTimer(b) {
-    const remaining = b.goal.ablaufZeit - Date.now();
+    const now = Date.now();
+
+    // Noch nicht gestartet: nur "ab HH:MM" anzeigen, kein Countdown
+    if (b.pending) {
+      if (now < b.goal.startZeit) {
+        const label = 'ab ' + clockLabel(b.goal.startZeit);
+        if (label !== b.lastLabel) { b.timerEl.textContent = label; b.lastLabel = label; }
+        return;
+      }
+      // Startzeit erreicht -> jetzt läuft der Countdown
+      b.pending = false;
+      b.el.classList.remove('pending');
+      Store.setStatus(b.goal.id, 'aktiv');
+    }
+
+    const remaining = b.goal.ablaufZeit - now;
     const label = fmt(remaining);
     if (label !== b.lastLabel) {
       b.timerEl.textContent = label;
@@ -284,7 +311,8 @@
   }
 
   function renderHeute() {
-    const goals = Store.forDay(Store.today()).filter((g) => g.status === 'aktiv');
+    const goals = Store.forDay(Store.today())
+      .filter((g) => g.status === 'aktiv' || g.status === 'geplant');
     goals.forEach((g) => { if (!bubbles.has(g.id)) makeBubble(g); });
     updateEmptyHint();
   }
@@ -428,16 +456,35 @@
   buildWheel(wheelH, MAX_H);
   buildWheel(wheelM, MAX_M);
 
+  // Start-Uhrzeit-Räder (Stunden 0–23, Minuten 0–59)
+  buildWheel(wheelSH, 23);
+  buildWheel(wheelSM, 59);
+  [wheelSH, wheelSM].forEach((el) => {
+    el.addEventListener('scroll', () => markSelected(el, wheelValue(el)), { passive: true });
+    el.addEventListener('click', wheelTapHandler(el));
+  });
+
   // ============================================================
   //  Formular-Sheet
   // ============================================================
+  function resetStartToggle() {
+    startMode = 'sofort';
+    startWheelPicker.classList.add('hidden');
+    startToggle.querySelectorAll('.prio').forEach((el) =>
+      el.classList.toggle('is-active', el.dataset.start === 'sofort'));
+  }
+
   function openSheet() {
     overlay.classList.remove('hidden');
-    // Räder auf Standard 0 Std / 15 Min setzen (nach dem Sichtbarwerden)
+    resetStartToggle();
+    // Räder setzen (nach dem Sichtbarwerden): Dauer 0 Std / 15 Min, Start = jetzt
     requestAnimationFrame(() => {
       setWheel(wheelH, 0);
       setWheel(wheelM, 15);
       updateReadout();
+      const now = new Date();
+      setWheel(wheelSH, now.getHours());
+      setWheel(wheelSM, now.getMinutes());
     });
     setTimeout(() => titelInput.focus(), 350);
   }
@@ -447,6 +494,7 @@
     selectedPrio = 'mittel';
     prioPicker.querySelectorAll('.prio').forEach((el) =>
       el.classList.toggle('is-active', el.dataset.prio === 'mittel'));
+    resetStartToggle();
   }
 
   // ============================================================
@@ -467,15 +515,45 @@
       el.classList.toggle('is-active', el === btn));
   });
 
+  // Umschalter Sofort / Ab Uhrzeit
+  startToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.prio');
+    if (!btn) return;
+    startMode = btn.dataset.start;
+    startToggle.querySelectorAll('.prio').forEach((el) =>
+      el.classList.toggle('is-active', el === btn));
+    const showWheel = startMode === 'uhrzeit';
+    startWheelPicker.classList.toggle('hidden', !showWheel);
+    if (showWheel) {
+      requestAnimationFrame(() => {
+        const now = new Date();
+        setWheel(wheelSH, now.getHours());
+        setWheel(wheelSM, now.getMinutes());
+      });
+    }
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const titel = titelInput.value.trim();
     if (!titel) return;
     const min = Math.max(1, totalMinutes()); // mindestens 1 Minute
+
+    // Startzeit bestimmen
+    let startZeit = Date.now();
+    if (startMode === 'uhrzeit') {
+      const d = new Date();
+      d.setHours(wheelValue(wheelSH), wheelValue(wheelSM), 0, 0);
+      startZeit = d.getTime();
+      // liegt die gewählte Uhrzeit heute schon in der Vergangenheit -> sofort starten
+      if (startZeit <= Date.now()) startZeit = Date.now();
+    }
+
     const goal = Store.add({
       titel,
       prioritaet: selectedPrio,
       dauerMinuten: min,
+      startZeit,
     });
     closeSheet();
     if (currentView === 'heute') makeBubble(goal);

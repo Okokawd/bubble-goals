@@ -219,6 +219,14 @@ body::before {
 }
 .bubble.b-warn .b-timer { color: #e0483c; font-weight: 700; }
 
+/* Blase wartet noch auf ihre Startzeit (geplant) */
+.bubble.pending { opacity: 0.85; }
+.bubble.pending .b-timer { color: #6a6f9c; font-weight: 600; }
+.bubble.pending .b-title { opacity: 0.9; }
+
+/* Start-Rad bekommt etwas Abstand zum Umschalter */
+.start-wheel { margin-top: 12px; }
+
 /* Prioritätsfarben (nur zarter Farbstich am Rand) */
 .bubble.prio-niedrig { --bubble-tint: rgba(150, 205, 255, 0.24); }
 .bubble.prio-mittel  { --bubble-tint: rgba(185, 170, 255, 0.28); }
